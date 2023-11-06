@@ -1,5 +1,6 @@
 require("./db");
 const express = require("express");
+const authenticateJWT = require("./middleware/authMiddleware.js");
 
 const app = express();
 
@@ -19,6 +20,9 @@ app.use("/api/products", productsRoutes);
 
 const couponsRoutes = require("./routes/coupons.routes.js");
 app.use("/api/coupons", couponsRoutes);
+
+const userRoutes = require("./routes/user.routes.js");
+app.use("/api/user", authenticateJWT, userRoutes);
 
 require("./error-handling")(app);
 module.exports = app;

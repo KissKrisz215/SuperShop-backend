@@ -3,27 +3,31 @@ const User = require("../model/User.model");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const jwtSecret = process.env.JWT_SECRET;
 
 router.post("/signup", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, phoneNumber } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const existingUserWithEmail = await User.findOne({ email });
+    if (existingUserWithEmail) {
       return res.status(400).json({ message: "Email already in use" });
+    }
+
+    const existingUserWithPhoneNumber = await User.findOne({ phoneNumber });
+    if (existingUserWithPhoneNumber) {
+      return res.status(400).json({ message: "Phone number already in use" });
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email.match(emailRegex)) {
+      return res
+        .status(400)
+        .json({ message: "Email must be a valid email address." });
     }
 
     const passwordRegex =
       /^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*?&])[A-Za-z\d$@$!%*?&]{8,}$/;
-
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-    if (!email.match(emailRegex)) {
-      return res.status(400).json({
-        message: "Email must be a valid email address.",
-      });
-    }
-
     if (!password.match(passwordRegex)) {
       return res.status(400).json({
         message:
@@ -31,9 +35,21 @@ router.post("/signup", async (req, res) => {
       });
     }
 
+    const phoneNumberRegex = /^\d{10}$/;
+    if (!phoneNumber.match(phoneNumberRegex)) {
+      return res
+        .status(400)
+        .json({ message: "Phone number must be a 10-digit number." });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({ username, email, password: hashedPassword });
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      phoneNumber,
+    });
 
     await newUser.save();
 
@@ -59,7 +75,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Authentication failed" });
     }
 
-    const token = jwt.sign({ userId: user._id }, "your-secret-key", {
+    const token = jwt.sign({ userId: user._id }, jwtSecret, {
       expiresIn: "1h",
     });
 
