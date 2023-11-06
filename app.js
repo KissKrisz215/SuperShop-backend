@@ -17,5 +17,8 @@ app.use("/api/categories", categoryRoutes);
 const productsRoutes = require("./routes/products.routes.js");
 app.use("/api/products", productsRoutes);
 
+const couponsRoutes = require("./routes/coupons.routes.js");
+app.use("/api/coupons", couponsRoutes);
+
 require("./error-handling")(app);
 module.exports = app;
