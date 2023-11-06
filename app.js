@@ -8,8 +8,8 @@ require("./config")(app);
 const allRoutes = require("./routes");
 app.use("/api", allRoutes);
 
-const userRoutes = require("./routes/routes.js");
-app.use("/api", userRoutes);
+const authRoutes = require("./routes/auth.routes.js");
+app.use("/api/auth", authRoutes);
 
 const categoryRoutes = require("./routes/categories.routes.js");
 app.use("/api/categories", categoryRoutes);
