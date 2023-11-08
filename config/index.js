@@ -8,7 +8,7 @@ module.exports = (app) => {
 
   app.use(
     cors({
-      origin: ["https://super-shop-three.vercel.app"],
+      origin: "*",
     })
   );
 
