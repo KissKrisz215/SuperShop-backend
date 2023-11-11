@@ -12,6 +12,19 @@ router.get("/all", async (req, res) => {
   }
 });
 
+router.get("/discounted", async (req, res) => {
+  try {
+    const discountedProducts = await Product.find({
+      "prices.discount": { $gt: 0 },
+    });
+
+    res.json(discountedProducts);
+  } catch (error) {
+    console.error("Error fetching discounted products:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const productId = req.params.id;
