@@ -25,6 +25,18 @@ router.get("/discounted", async (req, res) => {
   }
 });
 
+router.get("/popular", async (req, res) => {
+  try {
+    const allProducts = await Product.find();
+    const popularProducts = allProducts.slice(18, 31);
+
+    res.json(popularProducts);
+  } catch (error) {
+    console.error("Error fetching popular products:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const productId = req.params.id;
