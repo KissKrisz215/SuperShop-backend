@@ -14,11 +14,6 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    const existingUserWithPhoneNumber = await User.findOne({ phoneNumber });
-    if (existingUserWithPhoneNumber) {
-      return res.status(400).json({ message: "Phone number already in use" });
-    }
-
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!email.match(emailRegex)) {
       return res
@@ -35,20 +30,12 @@ router.post("/signup", async (req, res) => {
       });
     }
 
-    const phoneNumberRegex = /^\d{10}$/;
-    if (!phoneNumber.match(phoneNumberRegex)) {
-      return res
-        .status(400)
-        .json({ message: "Phone number must be a 10-digit number." });
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
       username,
       email,
       password: hashedPassword,
-      phoneNumber,
     });
 
     await newUser.save();
