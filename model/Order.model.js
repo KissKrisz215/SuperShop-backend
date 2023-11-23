@@ -13,7 +13,9 @@ const cartItemSchema = new mongoose.Schema({
   sku: String,
   barcode: String,
   productId: String,
-  title: String,
+  title: {
+    en: String,
+  },
   category: {
     _id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -61,18 +63,14 @@ const orderSchema = new mongoose.Schema({
       return id;
     },
   },
-  username: String,
   firstName: String,
   lastName: String,
+  discount: Number,
   email: {
     required: true,
     type: String,
     lowercase: true,
     trim: true,
-  },
-  phoneNumber: {
-    type: String,
-    required: true,
   },
   address: {
     type: String,
@@ -91,18 +89,34 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   coupon: String,
+  couponCode: String,
   shipping: {
     type: String,
     required: true,
   },
-  paymentMethod: {
+  payment: {
+    paymentMethod: String,
+    details: {
+      cardNumber: String,
+      cvc: String,
+      expiryDate: String,
+    },
+  },
+  phone: {
     type: String,
     required: true,
   },
-  cardNumber: String,
-  status: String,
+  status: {
+    type: String,
+    default: "Pending",
+  },
   totalAmount: Number,
-  cart: [cartItemSchema],
+  shippingCost: Number,
+  products: [cartItemSchema],
+  date: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const Order = mongoose.model("Order", orderSchema);

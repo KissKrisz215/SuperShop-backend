@@ -12,6 +12,33 @@ router.get("/all", async (req, res) => {
   }
 });
 
+router.post("/search", async (req, res) => {
+  try {
+    const searchValue = req.body.searchValue;
+
+    if (!searchValue) {
+      return res.status(400).json({ error: "Search value is required" });
+    }
+
+    const products = await Product.find({
+      $or: [
+        { slug: { $regex: new RegExp(searchValue, "i") } },
+        { "title.en": { $regex: new RegExp(searchValue, "i") } },
+        { description: { $regex: new RegExp(searchValue, "i") } },
+      ],
+    });
+
+    if (products.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.get("/discounted", async (req, res) => {
   try {
     const discountedProducts = await Product.find({
