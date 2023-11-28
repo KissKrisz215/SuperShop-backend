@@ -1,19 +1,49 @@
 const router = require("express").Router();
 const Order = require("../model/Order.model");
 const User = require("../model/User.model");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const jwtSecret = process.env.JWT_SECRET;
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "profile-pictures",
+    allowed_formats: ["jpg", "jpeg", "png"],
+    public_id: (req, file) => `${file.originalname}-${Date.now()}`,
+  },
+});
+
+const upload = multer({ storage });
 
 router.get("/", (req, res) => {
   res.send("User Route");
 });
 
-router.put("/update", async (req, res) => {
+router.put("/update", upload.single("profilePicture"), async (req, res) => {
   try {
+    console.log("Body:", req.body);
+
     const { userId } = req.user;
     const updatedUserData = req.body;
+
+    if (req.file) {
+      const cloudinaryResponse = await cloudinary.uploader.upload(
+        req.file.path
+      );
+      updatedUserData.image = cloudinaryResponse.secure_url;
+    }
 
     if (updatedUserData.email) {
       const existingUser = await User.findOne({ email: updatedUserData.email });
@@ -22,27 +52,6 @@ router.put("/update", async (req, res) => {
         return res
           .status(400)
           .json({ error: "Email address is already in use" });
-      }
-    }
-
-    if (updatedUserData.phoneNumber) {
-      const phoneNumberRegex = /^\d{10}$/;
-
-      if (!phoneNumberRegex.test(updatedUserData.phoneNumber)) {
-        return res.status(400).json({ error: "Invalid phone number format" });
-      }
-
-      const existingUserWithPhoneNumber = await User.findOne({
-        phoneNumber: updatedUserData.phoneNumber,
-      });
-
-      if (
-        existingUserWithPhoneNumber &&
-        existingUserWithPhoneNumber._id.toString() !== userId
-      ) {
-        return res
-          .status(400)
-          .json({ error: "Phone number is already in use" });
       }
     }
 
@@ -57,11 +66,37 @@ router.put("/update", async (req, res) => {
 
 router.put("/changepassword", async (req, res) => {
   try {
-    const userId = req.user.id;
-
+    const token = req.header("x-auth-token");
+    const userPassword = req.body.password;
     const newPassword = req.body.newPassword;
 
-    await User.findByIdAndUpdate(userId, { password: user.password });
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "No authentication token provided" });
+    }
+
+    if (!userPassword || !newPassword) {
+      res.status(401).json({ message: "Please Provide Passwords" });
+    }
+
+    const decoded = jwt.verify(token, jwtSecret);
+    const userId = decoded.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    console.log("User Password:", userPassword);
+    console.log("Stored Password:", user.password);
+    const isPasswordMatch = await bcrypt.compare(userPassword, user.password);
+    if (!isPasswordMatch) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    await User.findByIdAndUpdate(userId, { password: hashedNewPassword });
 
     res.json({ message: "Password changed successfully" });
   } catch (error) {
